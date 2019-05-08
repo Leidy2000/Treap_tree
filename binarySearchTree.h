@@ -1,0 +1,231 @@
+#ifndef BINARYSEARCHTREE_H_INCLUDED
+#define BINARYSEARCHTREE_H_INCLUDED
+
+#include <iostream>
+#include <queue>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fstream>
+#include <sstream>
+using namespace std;
+
+//结构体  二叉搜索树的节点
+struct binaryTreeNode
+{
+    int element;//值
+    binaryTreeNode *leftChild,   //左孩子
+                      *rightChild;  //右孩子
+
+    binaryTreeNode() {leftChild = rightChild = NULL;}
+    binaryTreeNode(const int& theElement):element(theElement){leftChild = rightChild = NULL;}
+    binaryTreeNode(const int& theElement,binaryTreeNode *theLeftChild,binaryTreeNode *theRightChild):element(theElement)
+    {
+        leftChild = theLeftChild;
+        rightChild = theRightChild;
+    }
+};
+//类 二叉搜索树
+class binarySearchTree
+{
+public:
+    binarySearchTree() {root = NULL; treeSize = 0;}//构造函数初始化
+    bool empty() const {return treeSize == 0;}//判断二叉搜索树是否为空
+    int size() const {return treeSize;}//返回二叉搜索树的元素个数
+
+    void init(int* a, int n);
+    void insert(int& thePair);//插入元素函数
+    void erase(int& theKey);//删除元素函数
+
+    //按关键字升序输出所有数对
+    void output(string an){levelOrder(root, an); return;}
+    void ascend() {preOrder(root);}
+    void level() {cout<<height(root)<<endl;};
+private:
+    binaryTreeNode *root;//指向binaryTreeNode<E>类型的指针，指向树根
+    int treeSize;           //树的元素个数
+    //将中序遍历方式作为私有成员
+    static void levelOrder(binaryTreeNode *t, string an);
+    //访问节点，输出节点关键字以及左子树元素个数
+    static void visit(binaryTreeNode *t){cout<<t->element<<endl;}
+    static int height(binaryTreeNode* t)
+    {
+        if(t == NULL)
+            return 0;
+        int hl = height(t->leftChild);
+        int hr = height(t->rightChild);
+        if(hl > hr)
+            return ++hl;
+        else
+            return ++hr;
+    }
+
+    static void preOrder(binaryTreeNode* t)
+    {
+        if(t != NULL){
+            visit(t);
+            preOrder(t->leftChild);
+            preOrder(t->rightChild);
+        }
+    }
+};
+
+//中序遍历
+void binarySearchTree::levelOrder(binaryTreeNode *t, string an)
+{
+    fstream outfile("graph.gv", ios::out);
+    outfile<<"graph G{"<<endl;
+    queue<binaryTreeNode*> q;
+    if(t != NULL && t->leftChild == NULL && t->rightChild == NULL){
+        stringstream ss;
+        ss << t->element;
+        string a = ss.str();
+        ss.str("");
+        string struct1 = a + ";";
+        outfile<<struct1<<endl;
+        outfile<<"}"<<endl;
+        outfile.close();
+        string order = "dot -Tpng graph.gv -o " + an + ".png";
+        const char *p = order.data();
+        system(p);
+        return;
+    }
+    while(t != NULL){
+        if(t->leftChild != NULL){
+            stringstream ss;
+            ss << t->element;
+            string a = ss.str();
+            ss.str("");
+            ss << t->leftChild->element;
+            string b = ss.str();
+            string ed = a;
+            ed += " -- ";
+            ed += b;
+            ed += " ; ";
+            outfile<<ed <<endl;
+        }
+        if(t->rightChild != NULL){
+            stringstream ss;
+            ss << t->element;
+            string a = ss.str();
+            ss.str("");
+            ss << t->rightChild->element;
+            string c = ss.str();
+            string ge = a;
+            ge += " -- ";
+            ge += c;
+            ge += " ; ";
+            outfile<<ge <<endl;
+        }
+
+        if(t->leftChild != NULL)
+            q.push(t->leftChild);
+        if(t->rightChild != NULL)
+            q.push(t->rightChild);
+
+        if(q.empty() ){
+            outfile<<"}"<<endl;
+            outfile.close();
+            string order = "dot -Tpng graph.gv -o " + an + ".png";
+            const char *p = order.data();
+            system(p);
+            return;
+        }
+        else{
+            t = q.front();
+            q.pop();
+        }
+    }
+}
+
+//插入函数
+void binarySearchTree::insert(int& thePair)
+{
+    //标记遍历当前位置以及前一个节点
+    binaryTreeNode *p = root, *pp = NULL;
+    while (p != NULL)//只要不为空就继续向下遍历
+    {
+        pp = p;//保存父母节点
+        //如果节点关键字比插入节点关键字大，继续遍历左子树
+        if (thePair < p->element)
+            p = p->leftChild;
+        else if (thePair > p->element)//如果节点关键字比插入节点关键字大，继续遍历右子树
+            p = p->rightChild;
+        else
+        {
+            p->element = thePair;
+            return;
+        }
+    }
+
+    //创建新节点
+    binaryTreeNode *newNode = new binaryTreeNode (thePair);
+    if (root != NULL) //将节点放到合适的位置上去
+    {
+        if (thePair < pp->element)
+            pp->leftChild = newNode;
+        else
+            pp->rightChild = newNode;
+    }
+    else
+        root = newNode; //如果插入之前二叉搜索树为空，直接放到根节点上
+   treeSize++;//更新二叉搜索树的元素个数
+}
+
+//删除函数
+void binarySearchTree::erase(int& theKey)
+{
+    binaryTreeNode *p = root, *pp = NULL;
+    while (p != NULL && p->element != theKey)
+    {//只要指针不为空或者未找到节点继续向下遍历
+        pp = p;//保存父母节点
+        if (theKey < p->element)//向左子树查找
+            p = p->leftChild;
+        else//向右子树查找
+            p = p->rightChild;
+    }
+    if (p == NULL)//如果没有找到，输出0，然后将改动的值再改回来，返回函数
+    {
+        cout<<"can't find"<<endl;
+        return;
+    }
+    // 要删除的节点度为2
+    if(p->leftChild != NULL && p->rightChild != NULL)
+    {
+        binaryTreeNode *s,*ps;
+      	s = p->rightChild;
+        ps = p;  //保存父母节点
+		while (s->leftChild != NULL)//寻找右子树中最小的节点
+      	{
+         	ps = s;
+         	s = s->leftChild;
+      	}
+      	//修改值，继而删除节点s
+      	p->element=s->element;
+      	p->element=s->element;
+      	pp = ps;
+      	p = s;
+    }
+    //当要删除的节点度小于等于1时，直接将子节点挪上去
+    binaryTreeNode *c;
+    if (p->leftChild != NULL)
+        c = p->leftChild;
+    else
+        c = p->rightChild;
+    if(p==root)
+   		root=c;
+   	else if(pp->leftChild == p)
+   		pp->leftChild=c;
+   	else
+   		pp->rightChild=c;
+    //修改treeSize的值，将p所占的空间释放掉
+   treeSize--;
+   delete p;
+}
+
+void binarySearchTree::init(int* a, int n)
+{
+    for(int i = 1; i <= n; i++ )
+        insert(a[i]);
+}
+
+#endif // BINARYSEARCHTREE_H_INCLUDED
